@@ -20,13 +20,7 @@ Initial setup:
 '
 . ./test-lib.sh
 . "$TEST_DIRECTORY"/lib-rebase.sh
-
-test_cmp_graph () {
-	cat >expect &&
-	git log --graph --boundary --format=%s "$@" >output &&
-	sed "s/ *$//" <output >output.trimmed &&
-	test_cmp expect output.trimmed
-}
+. "$TEST_DIRECTORY"/lib-log-graph.sh
 
 test_expect_success 'setup' '
 	write_script replace-editor.sh <<-\EOF &&
@@ -84,7 +78,7 @@ test_expect_success 'create completely different structure' '
 	test_config sequence.editor \""$PWD"/replace-editor.sh\" &&
 	test_tick &&
 	git rebase -i -r A master &&
-	test_cmp_graph <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary <<-\EOF
 	*   Merge the topic branch '\''onebranch'\''
 	|\
 	| * D
@@ -201,7 +195,7 @@ test_expect_success 'with a branch tip that was cherry-picked already' '
 	git checkout already-upstream &&
 	test_tick &&
 	git rebase -i -r upstream-with-a2 &&
-	test_cmp_graph upstream-with-a2.. <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary upstream-with-a2.. <<-\EOF
 	*   Merge branch A
 	|\
 	| * A1
@@ -219,7 +213,7 @@ test_expect_success 'do not rebase cousins unless asked for' '
 	test_cmp_rev HEAD $before &&
 	test_tick &&
 	git rebase --rebase-merges=rebase-cousins HEAD^ &&
-	test_cmp_graph HEAD^.. <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary HEAD^.. <<-\EOF
 	*   Merge the topic branch '\''onebranch'\''
 	|\
 	| * D
@@ -311,7 +305,7 @@ test_expect_success 'root commits' '
 	test $(git rev-parse second-root^0) != $(git rev-parse HEAD^) &&
 	test $(git rev-parse second-root:second-root.t) = \
 		$(git rev-parse HEAD^:second-root.t) &&
-	test_cmp_graph HEAD <<-\EOF &&
+	test_cmp_graph --pretty=tformat:%s --boundary HEAD <<-\EOF &&
 	*   Merge the 3rd root
 	|\
 	| * third-root
@@ -347,7 +341,7 @@ test_expect_success 'A root commit can be a cousin, treat it that way' '
 	test_tick &&
 	git rebase -f -r HEAD^ &&
 	test_cmp_rev ! HEAD^2 khnum &&
-	test_cmp_graph HEAD^.. <<-\EOF &&
+	test_cmp_graph --pretty=tformat:%s --boundary HEAD^.. <<-\EOF &&
 	*   Merge branch '\''khnum'\'' into asherah
 	|\
 	| * yama
@@ -355,7 +349,7 @@ test_expect_success 'A root commit can be a cousin, treat it that way' '
 	EOF
 	test_tick &&
 	git rebase --rebase-merges=rebase-cousins HEAD^ &&
-	test_cmp_graph HEAD^.. <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary HEAD^.. <<-\EOF
 	*   Merge branch '\''khnum'\'' into asherah
 	|\
 	| * yama
@@ -402,7 +396,7 @@ test_expect_success 'octopus merges' '
 	git rebase -i --force-rebase -r HEAD^^ &&
 	test "Hank" = "$(git show -s --format=%an HEAD)" &&
 	test "$before" != $(git rev-parse HEAD) &&
-	test_cmp_graph HEAD^^.. <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary HEAD^^.. <<-\EOF
 	*-.   Tüntenfüsch
 	|\ \
 	| | * three
@@ -478,7 +472,7 @@ test_expect_success '--rebase-merges with message matched with onto label' '
 	git checkout -b onto-label E &&
 	git merge -m onto G &&
 	git rebase --rebase-merges --force-rebase E &&
-	test_cmp_graph <<-\EOF
+	test_cmp_graph --pretty=tformat:%s --boundary <<-\EOF
 	*   onto
 	|\
 	| * G
